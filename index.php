@@ -1,41 +1,14 @@
-<?php
-//lancement d'une session pour garder les infos de connexion 
+<?php  
 session_start();
-// connexion à la bdd en pdo
 require('connexion_bdd.php');
-
-
-
-
-if (isset($_SESSION['user_id'])) {
-    header('location:index.php');
-    exit();
-}
-
-// verification des données post et session a mettre dans la table post de la bdd
-if ((isset($_SESSION['id'])) && (isset($_POST['titre'])) && (isset($_POST['contenu']))) {
-    $user_id = $_SESSION['id'];
-    $titre = trim($_POST['titre']);
-    $contenu = trim($_POST['contenu']);
-
-    if(strlen($titre) >200 || strlen($contenu)>500){
-        echo "Le titre(max200) ou le contenu(max500) est trop long";
-        exit();
-    }
-    //  preparation de la requete pour l'inscription des données dans la bdd
-    $stmt = $pdo->prepare('insert into posts (user_id,titre,contenu) values (?,?,?)');
-    //ajout des variables de valeurs dans la requete
-    $stmt->execute([$user_id, $titre, $contenu]);
-
-    /* a revoir pb l'affichage du msg qd on raffraichi la page si non redirigé
-    echo 'Félicitation votre Post est maintenant publié';*/
-    header('location:index.php');
-    exit();
-    }   
-
-//recuperation des posts dans l'ordre de date decroissant
+    //recuperation des posts join avec les noms des posteur dans l'ordre de date decroissant
 $post = $pdo->query("select * from posts join users on posts.user_id =users.id ORDER BY date_post DESC ");
 $posts = $post->fetchAll(PDO::FETCH_ASSOC);
+
+//recuperation des likes join avec les noms des posteur 
+$like = $pdo->query("select * from users join likes on users.id =likes.user_id");
+$likes = $like->fetchAll(PDO::FETCH_ASSOC);
+
 
 ?>
 
@@ -71,7 +44,7 @@ $posts = $post->fetchAll(PDO::FETCH_ASSOC);
         <div class='main_page'>
 
             <div class='publi_contenu'>
-                <form class='form' method='post'>
+                <form class='form' method='post' action='publication_post.php'>
                     <label for="titre">Choisissez un titre :</label>
                     <select class='colonne_form' name="titre">
                         <option value="Devinette">Devinette</option>
@@ -87,7 +60,7 @@ $posts = $post->fetchAll(PDO::FETCH_ASSOC);
 
             
                 
-                <div class='posts'>
+                <div class='posts' action='publication_post.php'>
                     <?php foreach ($posts as $post): ?>
                         <div class='post'>
                             <p><strong><?php echo htmlentities($post['titre']); ?></strong></p>
@@ -95,8 +68,21 @@ $posts = $post->fetchAll(PDO::FETCH_ASSOC);
                             <p><?php echo htmlentities($post['contenu']); ?></p>
                             <p><br></p>
                             <p>Publié par <?php echo htmlentities($post['nom']); ?> </p>
-
+                            <br>
+                           
                         </div>
+                        <form action="like.php" method="post">
+                            <input type="hidden" name="post_id" value="<?php echo $post['id']; ?>">
+                            <input type="hidden" name="user_id" value="<?php echo $post['user_id']; ?>"> 
+                            <?php  // a terminer
+                            if(isset($likes)){
+                                echo  "<button class='colonne_form' class='bouton' name='add_like' type='submit'>Ajouter like</button>";
+                               " <br><br>";
+                             }else{
+                            echo "<button class='colonne_form' class='bouton' name='delete_like' type='submit'>Supprimer like</button>";
+                             }
+                           ?>
+                            </form>
                     <?php endforeach; ?>
                 </div>
            
